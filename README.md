@@ -36,4 +36,6 @@ python debug_log_enabler.py
 ```
 
 Each invocation of the "Enable" button starts its own 60 minute timer so
-multiple car IDs can be active simultaneously.
+multiple car IDs can be active simultaneously. A car ID can only have one
+active filter at a time; attempting to enable it again will result in an
+error.
