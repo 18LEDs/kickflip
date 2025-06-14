@@ -82,11 +82,11 @@ def _inc_open(inc_number: str) -> bool:
 
 def enable_debug_logs(car_id: str, inc_number: str) -> None:
     """Enable debug logs for a car_id if the INC is open."""
+    if car_id in ACTIVE_FILTERS:
+        raise RuntimeError("Filter already enabled for this car ID")
+
     if not _inc_open(inc_number):
         raise RuntimeError("INC is not open")
-
-    if car_id in ACTIVE_FILTERS:
-        ACTIVE_FILTERS[car_id].cancel()
 
     ACTIVE_FILTERS[car_id] = threading.Timer(60 * 60, lambda: disable_debug_logs(car_id))
     ACTIVE_FILTERS[car_id].start()
