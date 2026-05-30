@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     dd_pipeline_ids: str = ""
     # The processor ID (within each pipeline) that holds the debug drop filter
     dd_filter_processor_id: str = "drop-debug"
+    # Shared log index name — exclusion filter is updated alongside the pipeline filter
+    dd_index_name: str = ""
 
     # ServiceNow
     sn_instance: str = ""       # e.g. mycompany.service-now.com

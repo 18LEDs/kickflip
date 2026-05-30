@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kickflip-config
+  namespace: kickflip
+data:
+  DD_SITE: "datadoghq.com"
+  DD_PIPELINE_IDS: ""          # comma-separated pipeline IDs
+  DD_FILTER_PROCESSOR_ID: "drop-debug"
+  DD_INDEX_NAME: ""            # shared log index name
+  SN_INSTANCE: ""              # yourcompany.service-now.com
+  SN_MIN_SEVERITY: "2"
+  GRANT_DURATION_SECONDS: "600"
+  DATABASE_URL: "sqlite+aiosqlite:////data/grants.db"
