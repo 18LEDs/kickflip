@@ -1,0 +1,14 @@
+# PersistentVolumeClaim for the SQLite database.
+# k3s ships with the local-path provisioner by default, so no StorageClass
+# configuration is needed — it will provision automatically.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kickflip-data
+  namespace: kickflip
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
