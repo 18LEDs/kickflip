@@ -1,0 +1,21 @@
+# Optional — expose Kickflip outside the cluster via k3s Traefik ingress.
+# Update the host value to match your DNS or local hostname.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kickflip
+  namespace: kickflip
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: kickflip.internal    # replace with your hostname
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kickflip
+                port:
+                  number: 80

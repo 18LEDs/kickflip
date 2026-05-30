@@ -1,0 +1,63 @@
+# IMPORTANT: Keep replicas: 1 — SQLite does not support concurrent writers.
+# If you need HA in the future, migrate DATABASE_URL to Postgres first.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kickflip
+  namespace: kickflip
+  labels:
+    app: kickflip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kickflip
+  strategy:
+    type: Recreate      # Ensures old pod stops before new one starts (SQLite safety)
+  template:
+    metadata:
+      labels:
+        app: kickflip
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+        - name: kickflip
+          image: kickflip:latest    # Replace with your registry path
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: kickflip-config
+            - secretRef:
+                name: kickflip-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kickflip-data

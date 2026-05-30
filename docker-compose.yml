@@ -1,0 +1,16 @@
+services:
+  kickflip:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - kickflip-data:/data
+    env_file:
+      - .env
+    environment:
+      # Override DB path to use the mounted volume
+      DATABASE_URL: sqlite+aiosqlite:////data/grants.db
+    restart: unless-stopped
+
+volumes:
+  kickflip-data:
