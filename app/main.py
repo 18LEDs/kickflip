@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import init_db
 from app.routers.grants import router as grants_router
-from app.scheduler import scheduler
+from app.scheduler import scheduler, start_expiry_sweep
 from app.tasks import recover_on_startup
 
 logging.basicConfig(
@@ -24,6 +24,7 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 async def lifespan(app: FastAPI):
     await init_db()
     scheduler.start()
+    start_expiry_sweep()
     await recover_on_startup()
     log.info("Kickflip started")
     yield
