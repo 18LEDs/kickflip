@@ -37,6 +37,20 @@ def schedule_revert(grant_id: int, car_id: str, run_at: datetime) -> None:
     log.info("Revert for grant %d (CAR %s) scheduled at %s", grant_id, car_id, run_at)
 
 
+def start_expiry_sweep() -> None:
+    """Periodic safety-net: revert any active grants whose window has passed."""
+    from app.tasks import recover_on_startup  # same logic — expire & push
+
+    scheduler.add_job(
+        recover_on_startup,
+        "interval",
+        seconds=30,
+        id="expiry-sweep",
+        replace_existing=True,
+    )
+    log.info("Expiry sweep scheduled every 30s")
+
+
 def cancel_revert(grant_id: int) -> None:
     job_id = f"revert-{grant_id}"
     if scheduler.get_job(job_id):
