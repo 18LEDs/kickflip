@@ -8,6 +8,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from app.clients.datadog import apply_active_grants
+from app.clients.datadog_index import apply_active_grants_to_index
 from app.database import AsyncSessionLocal
 from app.models import Grant
 
@@ -40,6 +41,7 @@ async def revert_grant(grant_id: int, car_id: str) -> None:
         remaining = await _active_car_ids(session)
 
     await apply_active_grants(remaining)
+    await apply_active_grants_to_index(remaining)
     log.info("Grant %d reverted. Active CAR IDs remaining: %s", grant_id, remaining)
 
 
@@ -67,4 +69,5 @@ async def recover_on_startup() -> None:
         remaining = await _active_car_ids(session)
 
     await apply_active_grants(remaining)
+    await apply_active_grants_to_index(remaining)
     log.info("Startup recovery complete. Active grants: %s", remaining)
