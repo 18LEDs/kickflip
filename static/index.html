@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kickflip — Debug Log Enabler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .ring-pulse { animation: ring-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes ring-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased"
+      x-data="kickflip()"
+      x-init="init()">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center gap-3">
+      <svg class="w-7 h-7 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      <span class="text-lg font-semibold tracking-tight">Kickflip</span>
+      <span class="text-slate-500 text-sm ml-1">Debug Log Enabler</span>
+      <div class="ml-auto flex items-center gap-2 text-xs text-slate-500">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+        Observability Pipelines
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+    <!-- Alert banner -->
+    <div x-cloak x-show="alert.message"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         :class="alert.type === 'error' ? 'bg-red-950 border-red-700 text-red-300' : 'bg-emerald-950 border-emerald-700 text-emerald-300'"
+         class="border rounded-lg px-4 py-3 text-sm flex items-start gap-3">
+      <svg x-show="alert.type === 'error'" class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <svg x-show="alert.type === 'success'" class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span x-text="alert.message"></span>
+      <button @click="alert.message=''" class="ml-auto opacity-60 hover:opacity-100">✕</button>
+    </div>
+
+    <!-- Grant request form -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-800 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+          <svg class="w-4 h-4 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="font-semibold text-slate-100">Enable Debug Logs</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Grants are active for <span class="text-violet-400 font-medium" x-text="formatDuration(grantDuration)"></span> then automatically revert</p>
+        </div>
+      </div>
+
+      <form class="px-6 py-6 space-y-5" @submit.prevent="submitGrant()">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">CAR ID</label>
+            <input x-model="form.car_id"
+                   type="text"
+                   placeholder="e.g. 4821"
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm
+                          text-slate-100 placeholder-slate-600
+                          focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
+                          transition" />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">ServiceNow Incident</label>
+            <input x-model="form.inc_number"
+                   type="text"
+                   placeholder="INC0012345"
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm
+                          text-slate-100 placeholder-slate-600
+                          focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
+                          transition" />
+            <p class="text-xs text-slate-600">Must be an active SEV2 or higher incident</p>
+          </div>
+
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Requested By</label>
+          <input x-model="form.requested_by"
+                 type="text"
+                 placeholder="your name or email"
+                 class="w-full sm:w-72 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm
+                        text-slate-100 placeholder-slate-600
+                        focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
+                        transition" />
+        </div>
+
+        <div class="pt-1">
+          <button type="submit"
+                  :disabled="submitting"
+                  class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50
+                         disabled:cursor-not-allowed text-white font-medium text-sm px-5 py-2.5 rounded-lg
+                         transition focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2
+                         focus:ring-offset-slate-900">
+            <svg x-show="submitting" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <svg x-show="!submitting" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span x-text="submitting ? 'Enabling…' : 'Enable Debug Logs'"></span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Active grants -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          Active Grants
+          <span x-show="activeGrants.length > 0"
+                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold ring-pulse"
+                x-text="activeGrants.length"></span>
+        </h2>
+        <button @click="loadGrants()"
+                class="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      <div x-show="activeGrants.length === 0 && !loading"
+           class="text-center py-16 text-slate-600 text-sm border border-dashed border-slate-800 rounded-2xl">
+        No active debug grants — all pipelines filtering normally
+      </div>
+
+      <div x-show="loading" class="text-center py-10 text-slate-600 text-sm">Loading…</div>
+
+      <div x-show="activeGrants.length > 0" class="space-y-3">
+        <template x-for="grant in activeGrants" :key="grant.id">
+          <div class="bg-slate-900 border border-red-900/50 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
+               x-data="countdown(grant)">
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono font-semibold text-slate-100" x-text="grant.car_id"></span>
+                <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono" x-text="grant.inc_number"></span>
+                <span class="inline-flex items-center gap-1 text-xs text-red-400 font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-400 ring-pulse"></span>
+                  LIVE
+                </span>
+              </div>
+              <div class="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
+                <span>by <span class="text-slate-400" x-text="grant.requested_by"></span></span>
+                <span>enabled <span x-text="timeAgo(grant.created_at)"></span></span>
+              </div>
+            </div>
+
+            <!-- Countdown -->
+            <div class="flex items-center gap-4 shrink-0">
+              <div class="text-right">
+                <div class="text-2xl font-mono font-bold tabular-nums"
+                     :class="remaining < 60 ? 'text-red-400' : remaining < 180 ? 'text-amber-400' : 'text-emerald-400'"
+                     x-text="fmtCountdown(remaining)"></div>
+                <div class="text-xs text-slate-600">remaining</div>
+              </div>
+
+              <button @click="revokeGrant(grant.id)"
+                      :disabled="revoking"
+                      class="text-xs text-slate-500 hover:text-red-400 border border-slate-700 hover:border-red-700
+                             px-3 py-1.5 rounded-lg transition disabled:opacity-40">
+                Revoke
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Recent history -->
+    <section x-show="pastGrants.length > 0">
+      <h2 class="font-semibold text-slate-100 mb-4">Recent History</h2>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-800">
+              <th class="text-left px-5 py-3 font-medium">CAR ID</th>
+              <th class="text-left px-5 py-3 font-medium">Incident</th>
+              <th class="text-left px-5 py-3 font-medium">Requested By</th>
+              <th class="text-left px-5 py-3 font-medium">Duration</th>
+              <th class="text-left px-5 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="grant in pastGrants" :key="grant.id">
+              <tr class="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition">
+                <td class="px-5 py-3 font-mono text-slate-300" x-text="grant.car_id"></td>
+                <td class="px-5 py-3 font-mono text-slate-400 text-xs" x-text="grant.inc_number"></td>
+                <td class="px-5 py-3 text-slate-400 text-xs" x-text="grant.requested_by"></td>
+                <td class="px-5 py-3 text-slate-500 text-xs" x-text="grantDuration(grant)"></td>
+                <td class="px-5 py-3">
+                  <span :class="{
+                    'text-slate-500 bg-slate-800': grant.status === 'reverted',
+                    'text-amber-400 bg-amber-900/30': grant.status === 'expired',
+                  }" class="text-xs px-2 py-0.5 rounded font-medium" x-text="grant.status"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function kickflip() {
+      return {
+        form: { car_id: '', inc_number: '', requested_by: '' },
+        grants: [],
+        loading: false,
+        submitting: false,
+        alert: { type: '', message: '' },
+        grantDuration: 600,
+        pollTimer: null,
+
+        get activeGrants() {
+          return this.grants.filter(g => g.status === 'active');
+        },
+        get pastGrants() {
+          return this.grants.filter(g => g.status !== 'active');
+        },
+
+        async init() {
+          await this.loadGrants();
+          // Poll every 15 s to keep the list fresh without hammering the server
+          this.pollTimer = setInterval(() => this.loadGrants(), 15000);
+        },
+
+        async loadGrants() {
+          this.loading = true;
+          try {
+            const r = await fetch('/api/grants');
+            this.grants = await r.json();
+            if (this.grants.length > 0) {
+              // Infer grant duration from the first record
+              const g = this.grants[0];
+              const created = new Date(g.created_at + 'Z');
+              const expires = new Date(g.expires_at + 'Z');
+              this.grantDuration = Math.round((expires - created) / 1000);
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async submitGrant() {
+          if (!this.form.car_id || !this.form.inc_number) {
+            this.showAlert('error', 'CAR ID and Incident number are required');
+            return;
+          }
+          this.submitting = true;
+          this.alert = { type: '', message: '' };
+          try {
+            const r = await fetch('/api/grants', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.form),
+            });
+            const data = await r.json();
+            if (!r.ok) {
+              this.showAlert('error', this.extractError(data) || 'Request failed');
+              return;
+            }
+            this.form = { car_id: '', inc_number: '', requested_by: this.form.requested_by };
+            this.showAlert('success', `Debug logs enabled for CAR ${data.car_id} — expires in ${this.formatDuration(data.seconds_remaining)}`);
+            await this.loadGrants();
+          } catch (e) {
+            this.showAlert('error', 'Network error — check the server');
+          } finally {
+            this.submitting = false;
+          }
+        },
+
+        async revokeGrant(id) {
+          if (!confirm('Revoke this debug grant now?')) return;
+          try {
+            const r = await fetch(`/api/grants/${id}`, { method: 'DELETE' });
+            const data = await r.json();
+            if (!r.ok) {
+              this.showAlert('error', data.detail || 'Revoke failed');
+              return;
+            }
+            this.showAlert('success', `Grant for CAR ${data.car_id} revoked`);
+            await this.loadGrants();
+          } catch (e) {
+            this.showAlert('error', 'Network error');
+          }
+        },
+
+        extractError(data) {
+          // FastAPI returns Pydantic errors as [{loc, msg, type}] arrays
+          if (Array.isArray(data.detail)) {
+            return data.detail.map(e => e.msg.replace(/^Value error, /, '')).join('; ');
+          }
+          return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+        },
+
+        showAlert(type, message) {
+          this.alert = { type, message };
+          if (type === 'success') setTimeout(() => { this.alert.message = ''; }, 6000);
+        },
+
+        formatDuration(s) {
+          if (!s) return '';
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return m > 0 ? (sec > 0 ? `${m}m ${sec}s` : `${m}m`) : `${sec}s`;
+        },
+
+        grantDuration(grant) {
+          if (!grant.reverted_at) return '—';
+          const start = new Date(grant.created_at + 'Z');
+          const end = new Date(grant.reverted_at + 'Z');
+          return this.formatDuration(Math.round((end - start) / 1000));
+        },
+
+        timeAgo(ts) {
+          const diff = Math.round((Date.now() - new Date(ts + 'Z')) / 1000);
+          if (diff < 60) return `${diff}s ago`;
+          if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+          return `${Math.floor(diff/3600)}h ago`;
+        },
+      };
+    }
+
+    function countdown(grant) {
+      return {
+        remaining: grant.seconds_remaining ?? 0,
+        revoking: false,
+        timer: null,
+
+        init() {
+          this.tick();
+          this.timer = setInterval(() => this.tick(), 1000);
+        },
+        destroy() {
+          clearInterval(this.timer);
+        },
+        tick() {
+          const expires = new Date(this.grant.expires_at + 'Z');
+          this.remaining = Math.max(0, Math.round((expires - Date.now()) / 1000));
+        },
+        fmtCountdown(s) {
+          const m = String(Math.floor(s / 60)).padStart(2, '0');
+          const sec = String(s % 60).padStart(2, '0');
+          return `${m}:${sec}`;
+        },
+      };
+    }
+  </script>
+</body>
+</html>
