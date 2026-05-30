@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.datadog import apply_active_grants
+from app.clients.datadog_index import apply_active_grants_to_index
 from app.clients.servicenow import IncidentValidationError, validate_incident
 from app.config import settings
 from app.database import get_db
@@ -101,10 +102,11 @@ async def create_grant(body: GrantRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(grant)
 
-    # Collect all active CAR IDs (including the new one) and push to pipelines
+    # Collect all active CAR IDs (including the new one) and push to pipelines + index
     result = await db.execute(select(Grant.car_id).where(Grant.status == "active"))
     active_ids = [row[0] for row in result.all()]
     await apply_active_grants(active_ids)
+    await apply_active_grants_to_index(active_ids)
 
     schedule_revert(grant.id, grant.car_id, expires)
     return _enrich(grant)
@@ -127,5 +129,6 @@ async def revoke_grant(grant_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Grant.car_id).where(Grant.status == "active"))
     active_ids = [row[0] for row in result.all()]
     await apply_active_grants(active_ids)
+    await apply_active_grants_to_index(active_ids)
 
     return _enrich(grant)
