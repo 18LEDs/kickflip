@@ -43,6 +43,22 @@ Both Datadog and ServiceNow integrations run in **stub mode** when their env var
 
 ---
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The suite runs against an in-memory SQLite database and mocks the Datadog,
+ServiceNow and scheduler integrations, so no credentials or network access are
+required. Coverage includes the pipeline/index filter builders, the ServiceNow
+validator, the grants REST API, and the background revert/recovery tasks —
+including the case where several of many active grants are revoked individually
+and only those CAR IDs leave the filter.
+
+---
+
 ## Environment variables
 
 | Variable | Required | Description |
