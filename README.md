@@ -26,6 +26,52 @@ Multiple CAR IDs can be active simultaneously. The filter expression is rebuilt 
 
 ## Running locally
 
+---
+
+## Running locally
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and fill in environment variables
+cp .env.example .env
+
+# Start the server
+uvicorn app.main:app --reload --reload-exclude '*.db' --port 8123
+```
+
+Open **http://localhost:8123**
+
+Both Datadog and ServiceNow integrations run in **stub mode** when their env vars are absent — any `INC…` number is accepted and all API calls are skipped. This lets you run and test the UI without any real credentials.
+
+---
+
+## Running with Docker
+
+```bash
+# Build and run (uses docker-compose.yml)
+docker compose up --build
+```
+
+Open **http://localhost:8000**
+
+The SQLite database is stored in a named Docker volume (`kickflip-data`) so grants persist across container restarts.
+
+---
+
+## Deploying to k3s
+
+### 1. Build and push the image
+
+```bash
+docker build -t your-registry/kickflip:latest .
+docker push your-registry/kickflip:latest
+```
+
+### 2. Configure
+
+**`k8s/secret.yaml`** — fill in base64-encoded credentials before applying:
 ```bash
 # Install dependencies
 pip install -r requirements.txt
